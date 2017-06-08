@@ -55,12 +55,12 @@ open class MQTTSession: MQTTBroker {
 
     open weak var delegate: MQTTSessionDelegate?
 	
-    fileprivate var keepAliveTimer: DispatchSourceTimer!
-    fileprivate var connectionCompletionBlock: MQTTSessionCompletionBlock?
-    fileprivate var messagesCompletionBlocks = [UInt16: MQTTSessionCompletionBlock]()
-    fileprivate var factory: MQTTPacketFactory
+    private var keepAliveTimer: DispatchSourceTimer!
+    private var connectionCompletionBlock: MQTTSessionCompletionBlock?
+    private var messagesCompletionBlocks = [UInt16: MQTTSessionCompletionBlock]()
+    private var factory: MQTTPacketFactory
     
-    fileprivate var stream: MQTTSessionStream?
+    private var stream: MQTTSessionStream?
     
     public init(host: String, port: UInt16, clientID: String, cleanSession: Bool, keepAlive: UInt16, connectionTimeout: TimeInterval = 1.0, useSSL: Bool = false) {
         self.factory = MQTTPacketFactory()
@@ -123,14 +123,14 @@ open class MQTTSession: MQTTBroker {
         cleanupDisconnection(.manual, nil)
     }
     
-    fileprivate func cleanupDisconnection(_ reson: MQTTSessionDisconnect, _ error: Error?) {
+    private func cleanupDisconnection(_ reson: MQTTSessionDisconnect, _ error: Error?) {
         stream = nil
         keepAliveTimer?.cancel()
 		delegate?.mqttDidDisconnect(session: self, reson: reson, error: error)
     }
     
     @discardableResult
-    fileprivate func send(_ packet: MQTTPacket) -> Bool {
+    private func send(_ packet: MQTTPacket) -> Bool {
         if let stream = stream {
             let writtenLength = stream.send(packet)
             let didWriteSuccessfully = writtenLength != -1
@@ -142,7 +142,7 @@ open class MQTTSession: MQTTBroker {
         return false
     }
     
-    fileprivate func handle(_ packet: MQTTPacket) {
+    private func handle(_ packet: MQTTPacket) {
         switch packet {
         case let connAckPacket as MQTTConnAckPacket:
             let success = (connAckPacket.response == .connectionAccepted)
@@ -165,24 +165,24 @@ open class MQTTSession: MQTTBroker {
         }
     }
     
-    fileprivate func sendPubAck(for messageId: UInt16) {
+    private func sendPubAck(for messageId: UInt16) {
         let pubAck = MQTTPubAck(messageID: messageId)
         send(pubAck)
     }
     
-    fileprivate func callSuccessCompletionBlock(for messageId: UInt16) {
+    private func callSuccessCompletionBlock(for messageId: UInt16) {
         let completionBlock = messagesCompletionBlocks.removeValue(forKey: messageId)
         completionBlock?(true, MQTTSessionError.none)
     }
     
-    fileprivate func keepAliveTimerFired() {
+    private func keepAliveTimerFired() {
         let mqttPingReq = MQTTPingPacket()
         send(mqttPingReq)
     }
     
     private var messageID = UInt16(0)
     
-    fileprivate func nextMessageID() -> UInt16 {
+    private func nextMessageID() -> UInt16 {
         messageID += 1
         return messageID
     }

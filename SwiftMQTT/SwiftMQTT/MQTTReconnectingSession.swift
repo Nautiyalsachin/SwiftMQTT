@@ -52,9 +52,9 @@ public extension MQTTSession {
 }
 
 public class MQTTReconnectingSession: MQTTBroker {
-    fileprivate let connectParams: MQTTConnectParams
-    fileprivate let batchPredicate: ([MQTTMessage])->Bool
-    fileprivate var session: MQTTSession!
+    private let connectParams: MQTTConnectParams
+    private let batchPredicate: ([MQTTMessage])->Bool
+    private var session: MQTTSession!
     
     open weak var delegate: MQTTReconnectingSessionDelegate?
     
@@ -88,7 +88,7 @@ public class MQTTReconnectingSession: MQTTBroker {
 }
 
 extension MQTTReconnectingSession {
-    fileprivate func connectWithRetry(_ attempt: Int, _ error: Error?, _ completion: MQTTSessionCompletionBlock?) {
+    private func connectWithRetry(_ attempt: Int, _ error: Error?, _ completion: MQTTSessionCompletionBlock?) {
         self.session.connect { [weak self] success, newError in
             if success {
                 completion?(success, newError)
@@ -105,7 +105,7 @@ extension MQTTReconnectingSession {
         }
     }
     
-    fileprivate func doRetry(_ attempt: Int, _ error: Error?, _ completion: MQTTSessionCompletionBlock?) {
+    private func doRetry(_ attempt: Int, _ error: Error?, _ completion: MQTTSessionCompletionBlock?) {
         if attempt < connectParams.retryCount && connectParams.retryTimeInterval > 0.0 {
             DispatchQueue.global().asyncAfter(deadline: .now() + connectParams.retryTimeInterval) {
                 self.connectWithRetry(attempt + 1, error, completion)
@@ -117,7 +117,7 @@ extension MQTTReconnectingSession {
         }
     }
     
-    fileprivate func connectResuscitate(_ completion: MQTTSessionCompletionBlock?) {
+    private func connectResuscitate(_ completion: MQTTSessionCompletionBlock?) {
         if connectParams.keepAlive > 0 {
             DispatchQueue.global().asyncAfter(deadline: .now() + connectParams.resuscitateTimeInterval) { [weak self] in
                 self?.connect { success, newError in
