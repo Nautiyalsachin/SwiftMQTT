@@ -19,6 +19,13 @@ public enum MQTTPayload: CustomStringConvertible {
         return nil
     }
     
+    public var data: Data? {
+        if case .data(let data) = self {
+            return data
+        }
+        return nil
+    }
+    
     public var description: String {
         if let str = stringRep {
             return "'\(str)'"
