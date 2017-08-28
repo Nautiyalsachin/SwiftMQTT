@@ -36,7 +36,7 @@ public protocol MQTTSessionDelegate: class {
     func mqttDidDisconnect(session: MQTTSession, reson: MQTTSessionDisconnect, error: Error?)
 }
 
-public typealias MQTTSessionCompletionBlock = (_ succeeded: Bool, _ error: Error?) -> Void
+public typealias MQTTSessionCompletionBlock = (_ msgID:UInt16, _ succeeded: Bool, _ error: Error) -> Void
 
 open class MQTTSession: MQTTBroker {
 	
@@ -77,17 +77,17 @@ open class MQTTSession: MQTTBroker {
         disconnect()
     }
     
-    open func publish(_ data: Data, in topic: String, delivering qos: MQTTQoS, retain: Bool, completion: MQTTSessionCompletionBlock?) {
-        let msgID = nextMessageID()
+    open func publish(_ data: Data, in topic: String, withMsgID msgID: UInt16, delivering qos: MQTTQoS, retain: Bool, completion: MQTTSessionCompletionBlock?) {
+//        let msgID = nextMessageID()
         let pubMsg = MQTTPubMsg(topic: topic, payload: data, retain: retain, QoS: qos)
         let publishPacket = MQTTPublishPacket(messageID: msgID, message: pubMsg)
         if send(publishPacket) {
             messagesCompletionBlocks[msgID] = completion
             if qos == .atMostOnce {
-                completion?(true, MQTTSessionError.none)
+                completion?(msgID, true, MQTTSessionError.none)
             }
         } else {
-            completion?(false, MQTTSessionError.socketError)
+            completion?(msgID, false, MQTTSessionError.socketError)
         }
     }
     
@@ -97,7 +97,7 @@ open class MQTTSession: MQTTBroker {
         if send(subscribePacket) {
             messagesCompletionBlocks[msgID] = completion
         } else {
-            completion?(false, MQTTSessionError.socketError)
+            completion?(msgID, false, MQTTSessionError.socketError)
         }
     }
     
@@ -107,7 +107,7 @@ open class MQTTSession: MQTTBroker {
         if send(unSubPacket) {
             messagesCompletionBlocks[msgID] = completion
         } else {
-            completion?(false, MQTTSessionError.socketError)
+            completion?(msgID, false, MQTTSessionError.socketError)
         }
     }
     
@@ -145,7 +145,7 @@ open class MQTTSession: MQTTBroker {
         switch packet {
         case let connAckPacket as MQTTConnAckPacket:
             let success = (connAckPacket.response == .connectionAccepted)
-            connectionCompletionBlock?(success, connAckPacket.response)
+            connectionCompletionBlock?(0, success, connAckPacket.response)
             connectionCompletionBlock = nil
         case let subAckPacket as MQTTSubAckPacket:
             callSuccessCompletionBlock(for: subAckPacket.messageID)
@@ -171,7 +171,7 @@ open class MQTTSession: MQTTBroker {
     
     private func callSuccessCompletionBlock(for messageId: UInt16) {
         let completionBlock = messagesCompletionBlocks.removeValue(forKey: messageId)
-        completionBlock?(true, MQTTSessionError.none)
+        completionBlock?(messageId, true, MQTTSessionError.none)
     }
     
     fileprivate func keepAliveTimerFired() {
@@ -199,7 +199,7 @@ extension MQTTSession: MQTTSessionStreamDelegate {
 			connectPacket.lastWillMessage = lastWillMessage
 			
 			if send(connectPacket) == false {
-				connectionCompletionBlock?(false, MQTTSessionError.socketError)
+				connectionCompletionBlock?(0,false, MQTTSessionError.socketError)
 				connectionCompletionBlock = nil
 			}
 			
@@ -212,7 +212,7 @@ extension MQTTSession: MQTTSessionStreamDelegate {
 		}
 		else {
 			cleanupDisconnection(.failedConnect, nil)
-			connectionCompletionBlock?(false, MQTTSessionError.socketError)
+			connectionCompletionBlock?(0,false, MQTTSessionError.socketError)
 		}
 	}
 	
