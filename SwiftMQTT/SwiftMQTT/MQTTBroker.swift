@@ -12,7 +12,7 @@ public protocol MQTTBroker {
 
     func connect(completion: MQTTSessionCompletionBlock?)
 
-    func publish(_ data: Data, in topic: String, delivering qos: MQTTQoS, retain: Bool, completion: MQTTSessionCompletionBlock?)
+    func publish(_ data: Data, in topic: String, withMsgID msgID: UInt16, delivering qos: MQTTQoS, retain: Bool, completion: MQTTSessionCompletionBlock?)
     
     func subscribe(to topics: [String: MQTTQoS], completion: MQTTSessionCompletionBlock?)
     
@@ -23,8 +23,8 @@ public protocol MQTTBroker {
 
 public extension MQTTBroker {
 
-    func publish(_ data: Data, in topic: String, delivering qos: MQTTQoS, retain: Bool) {
-        publish(data, in: topic, delivering: qos, retain: retain, completion: nil)
+    func publish(_ data: Data, in topic: String, withMsgID msgID: UInt16, delivering qos: MQTTQoS, retain: Bool) {
+        publish(data, in: topic, withMsgID: msgID, delivering: qos, retain: retain, completion: nil)
     }
     
     func subscribe(to topics: [String: MQTTQoS]) {
