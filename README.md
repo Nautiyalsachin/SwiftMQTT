@@ -82,7 +82,7 @@ Install using [CocoaPods](http://cocoapods.org) by adding the following lines to
 
 ````ruby
 use_frameworks!
-pod 'SwiftMQTT', :git => 'https://github.com/oci-pronghorn/SwiftMQTT'
+pod 'SwiftMQTT', :git => 'https://github.com/Nautiyalsachin/SwiftMQTT'
 ````
 
 ## License
