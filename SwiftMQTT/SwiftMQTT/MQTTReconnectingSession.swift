@@ -70,8 +70,8 @@ public class MQTTReconnectingSession: MQTTBroker {
         self.connectWithRetry(0, nil, completion)
     }
     
-    public func publish(_ data: Data, in topic: String, delivering qos: MQTTQoS, retain: Bool, completion: MQTTSessionCompletionBlock?) {
-        self.session?.publish(data, in: topic, delivering: qos, retain: retain, completion: completion)
+    public func publish(_ data: Data, in topic: String, withMsgID msgID: UInt16, delivering qos: MQTTQoS, retain: Bool, completion: MQTTSessionCompletionBlock?) {
+        self.session?.publish(data, in: topic, withMsgID: msgID, delivering: qos, retain: retain, completion: completion)
     }
     
     public func subscribe(to topics: [String: MQTTQoS], completion: MQTTSessionCompletionBlock?) {
@@ -91,18 +91,18 @@ public class MQTTReconnectingSession: MQTTBroker {
 extension MQTTReconnectingSession {
     fileprivate func connectWithRetry(_ attempt: Int, _ error: Error?, _ completion: MQTTSessionCompletionBlock?) {
 		if let session = session {
-			session.connect { [weak self] success, newError in
+			session.connect { [weak self] msgID, success, newError in
 				if success {
-					completion?(success, newError)
+					completion?(msgID, success, newError)
 					if let inform = self {
-						inform.delegate?.mqttConnected(true, for: inform, error: newError ?? error)
+						inform.delegate?.mqttConnected( true, for: inform, error: newError )
 					}
 				}
 				else if let retry = self {
-					retry.doRetry(attempt, newError ?? error, completion)
+					retry.doRetry(attempt, newError , completion)
 				}
 				else {
-					completion?(false, newError ?? error)
+					completion?(msgID, false, newError )
 				}
 			}
 		}
@@ -131,15 +131,15 @@ extension MQTTReconnectingSession {
     }
 	
 	private func doResuscitate(_ completion: MQTTSessionCompletionBlock?) {
-		self.connect { [weak self] success, newError in
+		self.connect { [weak self] msgID, success, newError in
 			if success {
-				completion?(success, newError)
+				completion?(msgID, success, newError)
 			}
 			else if let retry = self {
 				retry.connectResuscitate(completion)
 			}
 			else {
-				completion?(false, newError)
+				completion?(msgID, false, newError)
 			}
 		}
 	}
